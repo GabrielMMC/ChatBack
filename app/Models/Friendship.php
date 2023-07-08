@@ -29,6 +29,11 @@ class Friendship extends Model
 
     public function messages()
     {
-        return $this->hasMany(Message::class, 'friendship_id');
+        return $this->hasMany(Message::class, 'friendship_id', 'id');
+    }
+
+    public function unseen_messages()
+    {
+        return $this->hasMany(UnseenMessage::class, 'friendship_id', 'id');
     }
 }

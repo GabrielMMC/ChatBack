@@ -21,7 +21,7 @@ class MessageRequest extends FormRequest
         return [
             'content.required' => 'O conteúdo é obrigatório',
             'type.required' => 'O tipo é obrigatório',
-            'reciver.required' => 'O remetente é obrigatório',
+            'receiver.required' => 'O remetente é obrigatório',
         ];
     }
 
@@ -37,7 +37,19 @@ class MessageRequest extends FormRequest
                 return [
                     'content' => 'required',
                     'type' => 'required',
-                    'reciver' => 'required'
+                    'receiver' => 'required'
+                ];
+
+            case 'store_image_message':
+                return [
+                    'type' => 'required',
+                    'receiver' => 'required'
+                ];
+
+            case 'store_audio_message':
+                return [
+                    'type' => 'required',
+                    'receiver' => 'required'
                 ];
 
             default:

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Events\Chat\SendMessage;
+use App\Events\Chat\Status;
 use App\Http\Requests\UserRequest;
+use App\Models\Friendship;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -190,7 +192,7 @@ class UserController extends Controller
                 ])->save();
             }
 
-            Event::dispatch(new SendMessage(null, $user->id, $status, $user->last_online_date));
+            Event::dispatch(new Status($user->id, $status, false, $user->last_online_date, 'online_response'));
 
             return response()->json([
                 "user" => $user,
@@ -199,6 +201,31 @@ class UserController extends Controller
         } catch (\Exception $ex) {
             return response()->json([
                 'message' => 'Erro ao alterar status de usuário',
+                'debug' => [
+                    'error' => $ex->getMessage(),
+                    'file' => $ex->getFile(),
+                    'line' => $ex->getLine()
+                ],
+            ], 500, [], JSON_PRETTY_PRINT);
+        }
+    }
+
+    public function update_is_typing_status($status, $receiver_id)
+    {
+        try {
+            // $user = auth()->user();
+            // $user = User::findOrFail($user->id);
+
+            $status = filter_var($status, FILTER_VALIDATE_BOOLEAN);
+
+            Event::dispatch(new SendMessage(null, $receiver_id, $status, true));
+
+            return response()->json([
+                'status' => $status
+            ], 200, [], JSON_PRETTY_PRINT);
+        } catch (\Exception $ex) {
+            return response()->json([
+                'message' => 'Erro ao alterar status de digitação',
                 'debug' => [
                     'error' => $ex->getMessage(),
                     'file' => $ex->getFile(),

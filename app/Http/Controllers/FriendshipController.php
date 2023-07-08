@@ -35,7 +35,7 @@ class FriendshipController extends Controller
                 'pending' => true
             ])->save();
 
-            Event::dispatch(new Invites($friendship, User::find($request->friend_user_id)));
+            Event::dispatch(new Invites($friendship, User::find($request->friend_user_id), false));
 
             DB::commit();
             return response()->json([
@@ -54,30 +54,23 @@ class FriendshipController extends Controller
         }
     }
 
-    public function list_friendships(Request $request)
+    public function list_friendships()
     {
         try {
             $user = auth()->user();
 
-            // $friendships = Friendship::where(['user_id' => $user->id, function ($query) {
-            //     $query->with('user');
-            // }])->orWhere(['friend_user_id' => $user->id, function ($query) {
-            //     $query->with('friend_user');
-            // }])->get();
-
-            $friendships = Friendship::where('user_id', $user->id)
-                ->orWhere('friend_user_id', $user->id)
+            $friendships = Friendship::where(function ($query) use ($user) {
+                $query->where(['user_id' => $user->id])
+                    ->orWhere(['friend_user_id' => $user->id]);
+            })
+                ->where('pending', false)
+                ->withCount('unseen_messages')
+                ->orderBy('unseen_messages_count', 'desc')
                 ->get();
+
 
             return response()->json([
                 'friendships' => FriendshipResource::collection($friendships),
-                // 
-                // 'pagination' => [
-                //     'current_page' => $disponible_users->currentPage(),
-                //     'last_page' => $disponible_users->lastPage(),
-                //     'total_pages' => $disponible_users->total(),
-                //     'per_page' => $disponible_users->perPage(),
-                // ],
             ], 200, [], JSON_PRETTY_PRINT);
         } catch (\Exception $ex) {
             return response()->json([
@@ -107,7 +100,7 @@ class FriendshipController extends Controller
                 })
                 ->whereRaw('LOWER(nickname) LIKE ?', ['%' . strtolower($request->search) . '%'])
                 ->select(['id', 'nickname'])
-                ->paginate(10);
+                ->paginate(5);
 
 
             return response()->json([
@@ -145,7 +138,10 @@ class FriendshipController extends Controller
                         'id' => $item['id'],
                         'user' => [
                             'id' => $item['user']['id'],
-                            'nickname' => $item['user']['nickname']
+                            'nickname' => $item['user']['nickname'],
+                            'file' => $item['user']['file'],
+                            'online' => $item['user']['online'],
+                            'last_online_date' => $item['user']['last_online_date']
                         ]
                     ];
                 }),
@@ -175,6 +171,9 @@ class FriendshipController extends Controller
             // return $request;
             $invite = Friendship::findOrFail($id);
             $invite->fill(['pending' => false])->save();
+            $friend_id = ($invite->user_id === $user->id ? $invite->friend_user_id : $invite->user_id);
+
+            Event::dispatch(new Invites($invite, User::find($user->id), $friend_id));
 
             return response()->json([
                 'message' => 'Convite aceito com sucesso'

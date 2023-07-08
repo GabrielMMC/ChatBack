@@ -15,9 +15,14 @@ class FriendshipResource extends JsonResource
     public function toArray(Request $request): array
     {
         // $request = parent::toArray($request);
+        $user = $this->user()->first();
+
         return [
             'id' => $this->id,
-            'user' => $this->user()->first(),
+            'user' => $user,
+            'notification' => $this->unseen_messages()->whereHas('message', function ($query) use ($user) {
+                $query->where('sender', $user->id);
+            })->count()
         ];
     }
 }

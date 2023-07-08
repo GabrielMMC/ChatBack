@@ -3,6 +3,7 @@
 namespace App\Events\Chat;
 
 use App\Models\Message;
+use App\Models\UnseenMessage;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -17,25 +18,27 @@ class SendMessage implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $message;
-    public $reciver;
-    public $online;
-    public $last_online_date;
+    public $receiver;
+    public $user;
+    public $is_typing;
+    public $typing_function;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($message, string $reciver, bool $online, string $last_online_date)
+    public function __construct($message, string $receiver, bool $is_typing, bool $typing_function)
     {
+        $this->user = auth()->user();
         $this->message = $message;
-        $this->reciver = $reciver;
-        $this->online = $online;
-        $this->last_online_date = $last_online_date;
+        $this->receiver = $receiver;
+        $this->is_typing = $is_typing;
+        $this->typing_function = $typing_function;
     }
 
     // public function broadcastOn(): array
     // {
     //     return [
-    //         new PrivateChannel('user' . $this->reciver),
+    //         new PrivateChannel('user' . $this->receiver),
     //     ];
     // }
     /**
@@ -45,7 +48,7 @@ class SendMessage implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel('user.' . $this->reciver);
+        return new Channel('user.' . $this->receiver);
     }
 
     public function broadcastAs()
@@ -55,13 +58,19 @@ class SendMessage implements ShouldBroadcast
 
     public function broadcastWith()
     {
-        if (!$this->online) {
+        if ($this->typing_function) {
             return [
-                'last_online_date' => $this->last_online_date,
+                'type' => 'typing',
+                'sender_id' => $this->user->id,
+                'is_typing' => $this->is_typing,
             ];
         } else {
             return [
+                'type' => 'message',
                 'message' => $this->message,
+                'unseen_messages' => UnseenMessage::where('friendship_id', $this->message->friendship_id)->whereHas('message', function ($query) {
+                    $query->where('sender', $this->user->id);
+                })->count(),
             ];
         }
     }

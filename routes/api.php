@@ -32,7 +32,10 @@ Route::group([
     ], function () {
         Route::get("/{id}", [MessageController::class, "get_messages"]);
         Route::post("/create", [MessageController::class, "store_message"]);
+        Route::post("/create/images", [MessageController::class, "store_image_message"]);
+        Route::post("/create/audios", [MessageController::class, "store_audio_message"]);
         Route::put("/update", [MessageController::class, "update_message"]);
+        Route::delete("/visualized/{id}", [MessageController::class, "delete_unseen_message"]);
         Route::delete("/delete/{id}", [MessageController::class, "delete_message"]);
     });
 });
@@ -62,5 +65,6 @@ Route::group([
         Route::post("/update", [UserController::class, "update_user"]);
         Route::get("/nickname/{nickname}", [UserController::class, "get_valid_nickname"]);
         Route::put("/online/{status}", [UserController::class, "update_online_status"]);
+        Route::put("/is_typing/{status}/{receiver_id}", [UserController::class, "update_is_typing_status"]);
     });
 });

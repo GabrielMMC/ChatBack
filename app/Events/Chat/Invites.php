@@ -19,14 +19,16 @@ class Invites implements ShouldBroadcast
 
     public $invite;
     public $user;
+    public $new_friend_user;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Friendship $invite, User $user)
+    public function __construct(Friendship $invite, User $user, string $new_friend_user)
     {
         $this->invite = $invite;
         $this->user = $user;
+        $this->new_friend_user = $new_friend_user;
     }
 
     // public function broadcastOn(): array
@@ -42,7 +44,11 @@ class Invites implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel('user.invites.' . $this->user->id);
+        if ($this->new_friend_user) {
+            return new Channel('user.invites.' . $this->new_friend_user);
+        } else {
+            return new Channel('user.invites.' . $this->user->id);
+        }
     }
 
     public function broadcastAs()
@@ -52,7 +58,18 @@ class Invites implements ShouldBroadcast
 
     public function broadcastWith()
     {
+        if ($this->new_friend_user) {
+            return [
+                'type' => 'new_friendship',
+                'friendship' => [
+                    'id' => $this->invite->id,
+                    'user' => $this->user,
+                    'notification' => 0
+                ]
+            ];
+        }
         return [
+            'type' => 'new_invite',
             'new_invite' => [
                 'id' => $this->invite->id,
                 'user' => [

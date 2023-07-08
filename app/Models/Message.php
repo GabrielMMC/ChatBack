@@ -18,7 +18,20 @@ class Message extends Model
         'content',
         'type',
         'sender',
-        'reciver',
+        'receiver',
         'friendship_id'
     ];
+
+    public static function boot()
+    {
+        parent::boot();
+
+        //once created/inserted successfully this method fired
+        static::created(function (Message $message) {
+            UnseenMessage::create([
+                'friendship_id' => $message->friendship_id,
+                'message_id' => $message->id,
+            ]);
+        });
+    }
 }
