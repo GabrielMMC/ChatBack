@@ -44,7 +44,7 @@ Route::group([
     "prefix" => "friendships"
 ], function () {
     Route::group([
-        "middleware" => ["auth:api", "cors"]
+        "middleware" => ["auth:api"]
     ], function () {
         Route::get("/", [FriendshipController::class, "list_friendships"]);
         Route::post("/create", [FriendshipController::class, "store_friendship"]);
