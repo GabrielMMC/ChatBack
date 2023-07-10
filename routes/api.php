@@ -18,7 +18,7 @@ use App\Http\Controllers\UserController;
 */
 
 Route::group([
-    "middleware" => ["auth", "cors"]
+    "prefix" => "auth"
 ], function () {
     Route::post("login", [UserController::class, "login"]);
     Route::post("register", [UserController::class, "register"]);
@@ -44,7 +44,7 @@ Route::group([
     "prefix" => "friendships"
 ], function () {
     Route::group([
-        "middleware" => ["auth:api"]
+        "middleware" => ["auth:api", "cors"]
     ], function () {
         Route::get("/", [FriendshipController::class, "list_friendships"]);
         Route::post("/create", [FriendshipController::class, "store_friendship"]);
