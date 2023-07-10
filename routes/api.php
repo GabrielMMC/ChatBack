@@ -21,7 +21,7 @@ Route::group([
     "prefix" => "auth"
 ], function () {
     Route::group([
-        "middleware" => ["auth:api", "cors"]
+        "middleware" => ["cors"]
     ], function () {
         Route::post("login", [UserController::class, "login"]);
         Route::post("register", [UserController::class, "register"]);
