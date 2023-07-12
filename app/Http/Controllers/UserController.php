@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -159,6 +160,12 @@ class UserController extends Controller
                 // Verifique se o tamanho da imagem é menor ou igual ao tamanho máximo permitido
                 if ($size > 1024 * (1024 * 5)) {
                     throw new \Exception('O tamanho da imagem é muito grande');
+                }
+
+                // Verifica se o usuário já possui uma imagem antiga
+                if ($user->file) {
+                    // Exclui a imagem antiga do storage
+                    Storage::disk('public')->delete($user->file);
                 }
 
                 $img =  $request->file('image');
