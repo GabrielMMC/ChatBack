@@ -21,22 +21,31 @@ class UserController extends Controller
             $data = $request->validated();
             $user = new User();
 
-            $has_email = User::where('email', '=', $data['email'])->first();
-            // Checking if the request email has already been used
-            if (empty($has_email)) {
-                $user->fill([...$data, 'password' => bcrypt($data['password'])])->save();
+            $has_email = User::where('email', '=', $data['email'])->exists();
+            $has_nickname = User::where('nickname', '=', $data['nickname'])->exists();
 
-                DB::commit();
-                return response()->json([
-                    'message' => 'Conta criada com sucesso'
-                ], 200, [], JSON_PRETTY_PRINT);
-                //Case the email already been used
-            } else {
+            // Checking if the request email has already been used
+            if ($has_email) {
                 DB::rollBack();
                 return response()->json([
                     'message' => 'Email em uso'
-                ], 200, [], JSON_PRETTY_PRINT);
+                ], 500, [], JSON_PRETTY_PRINT);
             }
+
+            // Checking if the request nickname has already been used
+            if ($has_nickname) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Apelido em uso'
+                ], 500, [], JSON_PRETTY_PRINT);
+            }
+
+            $user->fill([...$data, 'password' => bcrypt($data['password'])])->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Conta criada com sucesso'
+            ], 200, [], JSON_PRETTY_PRINT);
         } catch (\Exception $ex) {
             DB::rollBack();
             return response()->json([
@@ -136,24 +145,27 @@ class UserController extends Controller
             if (User::where('nickname', $data['nickname'])->where('id', '!=', $user->id)->exists()) {
                 throw new \Exception('Nickname já existente');
             }
-            // Verifique se a imagem é acessível
-            if (!$request->file('image')->isReadable()) {
-                throw new \Exception('A imagem ' .  $request->file('image')->getClientOriginalExtension() . ' não é acessível');
-            }
-            // Defina o tamanho máximo permitido para a imagem em bytes
-            $size = $request->file('image')->getSize();
-            // Verifique se o tamanho da imagem é menor ou igual ao tamanho máximo permitido
-            if ($size > 1024 * (1024 * 5)) {
-                throw new \Exception('O tamanho da imagem é muito grande');
-            }
 
             $user = User::findOrFail($user->id);
             $user->fill($data);
 
-            $img =  $request->file('image');
-            $name = uniqid('img_') . '.' .   $img->getClientOriginalExtension();
-            $img->storeAs('images', $name, ['disk' => 'public']);
-            $user->file = 'images/' . $name;
+            if ($request->file('image')) {
+                // Verifique se a imagem é acessível
+                if (!$request->file('image')->isReadable()) {
+                    throw new \Exception('A imagem ' .  $request->file('image')->getClientOriginalExtension() . ' não é acessível');
+                }
+                // Defina o tamanho máximo permitido para a imagem em bytes
+                $size = $request->file('image')->getSize();
+                // Verifique se o tamanho da imagem é menor ou igual ao tamanho máximo permitido
+                if ($size > 1024 * (1024 * 5)) {
+                    throw new \Exception('O tamanho da imagem é muito grande');
+                }
+
+                $img =  $request->file('image');
+                $name = uniqid('img_') . '.' .   $img->getClientOriginalExtension();
+                $img->storeAs('images', $name, ['disk' => 'public']);
+                $user->file = 'images/' . $name;
+            }
 
             $user->save();
 
